@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package posttest6;
+package posttest7;
 
 import java.sql.*;
 import javax.swing.JOptionPane;
@@ -18,6 +18,10 @@ private DefaultTableModel model;
 private Connection con = koneksi.getConnection();
 private Statement stt;
 private ResultSet rss;
+
+private int baris;
+private boolean cek=true;
+
     /**
      * Creates new form formdatabuku
      */
@@ -78,17 +82,44 @@ public boolean UbahData(String id, String judul, String penulis, String harga){
     }
 }
 
-public boolean HapusData(String id){
+public boolean HapusData(String id, int baris){
     try{
         String sql = "DELETE FROM buku WHERE id="+id+";";
         stt = con.createStatement();
         stt.executeUpdate(sql);
+        model.removeRow(baris);
         return true;
     }catch(SQLException e){
         System.out.println(e.getMessage());
         return false;
     }
 }
+
+private void validasidata(String jud, String nulis, String price) {//disini adalah sisi validasi dimana setiap data judul dan penulis yang masuk di huruf kecilkan
+        try{
+            String sql ="SELECT *FROM buku";//kita menampilkan dulu buku kemudian
+            stt = con.createStatement();//variabel menampung dari sql yang udah ditentukan
+            ResultSet rss = stt.executeQuery(sql);//variable penampung eksekusi pada sql
+            while(rss.next()){
+                Object[] o = new Object[2];//membuat objek baru
+                o[0]=rss.getString("judul").toLowerCase();//disini adalah sisi dimana objek yang baru di masukkan dengan huruf kecil
+                o[1]=rss.getString("penulis").toLowerCase();//disini adalah sisi objek dimana mendapati tulisan dengan masukkan dibandingkan dengan sql yang sudah di huruf kecilkan
+                
+                if(o[0].equals(jud.toLowerCase())&&o[1].equals(nulis.toLowerCase())){
+                    JOptionPane.showMessageDialog(null,"DATA TELAH ADA");//untuk membandingkan dan mencegah data duplikat dimana judul dan pengarang yang sama berada di database yang sama maka jika nama pengarang dan judul yang sama maka akan muncul pemberitahuan bahwa data telah ada 
+                    cek=false;//dan nilai cek berubah menjadi false
+                    break;                    
+                }
+            }
+            if(cek==true){
+                TambahData(jud, nulis, price);//ketika nilai cek masih bernilai benar maka akan lari ke method tambah data dimana data akan tersimpan
+            }
+        }catch(SQLException e){
+            System.out.println(e.getMessage());
+        }//jadi sebelum menyimpan data ada method validasi ini dimana gunanya mengecek dulu apakah sudah ada judul dan pengarang yang sama jika suddah ada maka data tidak bisa tersimpan tapi jika tidak ada buku yang kondisinya nama dan pengarang sama maka data akan tersimpan
+    }
+
+
 
 private void PencarianData(String by, String cari){
     try{
@@ -98,8 +129,8 @@ private void PencarianData(String by, String cari){
         while(rss.next()){
             Object[] data = new Object[4];
             data[0] = rss.getString("id");
-            data[1] = rss.getString("judul");
-            data[2] = rss.getString("penulis");
+            data[1] = rss.getString("judul").toLowerCase();
+            data[2] = rss.getString("penulis").toLowerCase();
             data[3] = rss.getInt("harga");
             model.addRow(data);
         }
@@ -153,7 +184,7 @@ private void PencarianData(String by, String cari){
         ));
         jScrollPane1.setViewportView(jTable1);
 
-        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(javax.swing.WindowConstants.DO_NOTHING_ON_CLOSE);
         addComponentListener(new java.awt.event.ComponentAdapter() {
             public void componentShown(java.awt.event.ComponentEvent evt) {
                 formComponentShown(evt);
@@ -397,26 +428,46 @@ private void PencarianData(String by, String cari){
 
     private void simpanActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_simpanActionPerformed
         // TODO add your handling code here:
-        String judul = txtJudul.getText();
-        String penulis = comboPenulis.getSelectedItem().toString();
-        String harga = txtHarga.getText();
-        TambahData(judul,penulis,harga);
-        InitTable();
-        TampilData();
+        if(txtJudul.getText().equals("")||txtHarga.getText().equals("")){
+         JOptionPane.showMessageDialog(null,"DATA BELUM LENGKAP","Danger!!",JOptionPane.INFORMATION_MESSAGE);
+         txtJudul.requestFocus();//apabila field harga dan judul kosong maka akan muncul pemberitahuan bahwa masih ada data yang kosong.
+     }
+      String judul = txtJudul.getText();
+      String penulis = comboPenulis.getSelectedItem().toString();
+      String harga = txtHarga.getText();
+     
+      validasidata(judul,penulis,harga);
+      
+      InitTable();
+      TampilData();
+      txtJudul.setText("");
+      comboPenulis.getSelectedItem();
+      txtHarga.setText("");
     }//GEN-LAST:event_simpanActionPerformed
 
     private void ubahActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_ubahActionPerformed
         // TODO add your handling code here:
-        int baris = jTable2.getSelectedRow();
-        String id = jTable2.getValueAt(baris, 0).toString();
-        String judul = txtJudul.getText();
-        String penulis = comboPenulis.getSelectedItem().toString();
-        String harga = txtHarga.getText();
-        if(UbahData(id, judul, penulis, harga))
-            JOptionPane.showMessageDialog(null, "Berhasil Update data");
-        else
-            JOptionPane.showConfirmDialog(null, "gagal update data");
-        InitTable();TampilData();
+        try {
+             int baris = jTable2.getSelectedRow();
+      
+      jTable2.setValueAt(txtJudul.getText(), baris,1);
+      jTable2.setValueAt(comboPenulis.getSelectedItem(), baris,2);
+      jTable2.setValueAt(txtHarga.getText(), baris,3);
+      
+       String e_judul=jTable2.getValueAt(baris, 1).toString();
+       String e_penulis=jTable2.getValueAt(baris, 2).toString();
+       String e_harga=jTable2.getValueAt(baris, 3).toString();
+       String id=jTable2.getValueAt(baris, 0).toString();
+       
+       txtJudul.setText(e_judul);
+       comboPenulis.setSelectedItem(e_penulis);
+       txtHarga.setText(e_harga);
+       
+       UbahData(e_judul,e_penulis,e_harga,id);
+        } catch (Exception e) {
+            //jika belum ada data yang dipilih namun mengklik tombol ubah maka akan muncul peringatan bahwa belum ada data yang terpilih
+            JOptionPane.showMessageDialog(null,"DATA BELUM DIPILIH","Danger!!",JOptionPane.INFORMATION_MESSAGE);
+        }
     }//GEN-LAST:event_ubahActionPerformed
 
     private void caridataActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_caridataActionPerformed
@@ -433,14 +484,20 @@ private void PencarianData(String by, String cari){
     }//GEN-LAST:event_keluarActionPerformed
 
     private void hapusActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_hapusActionPerformed
-        // TODO add your handling code here:
-        int  baris = jTable2.getSelectedRow();
-        String id = jTable2.getValueAt(baris, 0).toString();
-        if(HapusData(id))
-            JOptionPane.showMessageDialog(null, "berhasil hapus data");
-            else
-            JOptionPane.showConfirmDialog(null, "gagal hapus data");
-        InitTable();TampilData();
+        try{
+      //sama seperti update hapus data akan terpanggil setelah kita mengklik baris yang kita inginkan setelah itu method hapusdata akan berjalan
+      int baris = jTable2.getSelectedRow();
+  
+       String id = jTable2.getValueAt(baris, 0).toString();
+        HapusData(id,baris);
+    
+        txtJudul.setText("");
+        comboPenulis.setSelectedItem(null);
+        txtHarga.setText("");
+  }catch(Exception e){
+      //sama seperti update tadi jika belum ada baris yang terpilih maka akan menampilkan peringatan bahwa belum ada data yang terpilih
+      JOptionPane.showMessageDialog(null,"DATA BELUM DIPILIH","Danger!!",JOptionPane.INFORMATION_MESSAGE);
+  }
     }//GEN-LAST:event_hapusActionPerformed
 
     private void cariActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cariActionPerformed
@@ -500,10 +557,14 @@ private void PencarianData(String by, String cari){
     private void jTable2MouseClicked(java.awt.event.MouseEvent evt) {//GEN-FIRST:event_jTable2MouseClicked
         // TODO add your handling code here:
         int baris = jTable2.getSelectedRow();
+       
+       String e_judul=jTable2.getValueAt(baris, 1).toString();
+       String e_penulis=jTable2.getValueAt(baris, 2).toString();
+       String e_harga=jTable2.getValueAt(baris, 3).toString();
         
-        txtJudul.setText(jTable2.getValueAt(baris,1).toString());
-        comboPenulis.setSelectedItem(jTable2.getValueAt(baris,2).toString());
-        txtHarga.setText(jTable2.getValueAt(baris,3).toString());
+        txtJudul.setText(e_judul);
+        comboPenulis.setSelectedItem(e_penulis);
+        txtHarga.setText(e_harga);
     }//GEN-LAST:event_jTable2MouseClicked
 
     private void caridataCaretUpdate(javax.swing.event.CaretEvent evt) {//GEN-FIRST:event_caridataCaretUpdate
